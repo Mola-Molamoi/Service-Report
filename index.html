@@ -35,13 +35,15 @@ window._dbReady = true;
 window.dispatchEvent(new Event('dbReady'));
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --ink: #1a1a1a;
-    --mid: #444;
-    --soft: #888;
-    --rule: #c8c0b0;
+    --ink: #000000;
+    --mid: #222;
+    --soft: #555;
+    --rule: #666;
     --bg: #f5f2ed;
     --paper: #ffffff;
     --accent: #1a1a1a;
@@ -119,7 +121,7 @@ window.dispatchEvent(new Event('dbReady'));
   .doc {
     background: var(--paper);
     box-shadow: 0 4px 40px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08);
-    padding: 40px 48px 48px;
+    padding: 40px 20px 48px 48px;
     animation: appear 0.4s ease;
   }
 
@@ -447,7 +449,7 @@ window.dispatchEvent(new Event('dbReady'));
   }
 
   .service-table td {
-    border: 1px solid #bbb;
+    border: 1.5px solid #555;
     padding: 0;
     vertical-align: top;
   }
@@ -475,7 +477,7 @@ window.dispatchEvent(new Event('dbReady'));
   .service-table td.loc-cell textarea { text-align: center; }
   .service-table td.com-cell { width: 130px; }
   .service-table td.rem-cell { width: 130px; }
-  .service-table td.action-cell { width: 30px; border: none; vertical-align: middle; padding: 2px; }
+  .service-table td.action-cell { width: 24px; border: none; vertical-align: middle; padding: 2px 0; }
 
   .service-table td input:focus,
   .service-table td textarea:focus {
@@ -603,7 +605,7 @@ window.dispatchEvent(new Event('dbReady'));
     text-align: center;
   }
   @media print {
-    .sig-sublabel { color: #444; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .sig-sublabel { color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 
   .btn-clear-sig {
@@ -697,22 +699,63 @@ window.dispatchEvent(new Event('dbReady'));
     color: var(--ink);
   }
   @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     #ctrlUsedBadge { display: none !important; }
-    body { background: #fff; }
-    .app-bar { display: none; }
+    body { background: #fff !important; color: #000 !important; }
+    .app-bar { display: none !important; }
     .doc-wrap { max-width: 100%; margin: 0; padding: 0; }
-    .doc { box-shadow: none; padding: 24px 32px; }
-    .add-row-wrap { display: none; }
-    .btn-rm-row, .btn-rm-team, .btn-add-team, .tag-remove { display: none; }
-    .dropdown-trigger, .sup-trigger, .addr-trigger { display: none; }
-    .ctrl-year, .ctrl-month, .ctrl-num { display: none; }
-    .print-only-text { display: inline; }
-    .action-cell { display: none; }
+    .doc { box-shadow: none; padding: 24px 32px; color: #000 !important; }
+    .add-row-wrap { display: none !important; }
+    .btn-rm-row, .btn-rm-team, .btn-add-team, .tag-remove { display: none !important; }
+    .dropdown-trigger, .sup-trigger, .addr-trigger { display: none !important; }
+    .ctrl-year, .ctrl-month, .ctrl-num { display: none !important; }
+    .print-only-text { display: inline !important; color: #000 !important; font-weight: 600 !important; }
+    .action-cell { display: none !important; }
     .sig-canvas-wrap { background: #fff; }
-    .btn-clear-sig { display: none; }
-    input, textarea { -webkit-print-color-adjust: exact; }
+    .btn-clear-sig { display: none !important; }
     input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
     input[type="date"] { -webkit-appearance: none; appearance: none; }
+
+    /* ── Force all text pure black ── */
+    .company-info p, .company-info a { color: #000 !important; font-weight: 500 !important; }
+    .report-title { color: #000 !important; }
+    .control-label { color: #000 !important; }
+    .ctrl-display { color: #cc0000 !important; font-weight: 800 !important; }
+    .info-key { color: #000 !important; font-weight: 700 !important; }
+    .info-val, input.info-val, input[type="text"], input[type="date"] {
+      color: #000 !important;
+      font-weight: 500 !important;
+      border-bottom: 1.5px solid #000 !important;
+    }
+    textarea { color: #000 !important; font-weight: 500 !important; }
+    .footer-field { color: #000 !important; font-weight: 700 !important; }
+    .footer-field input { color: #000 !important; font-weight: 500 !important; border-bottom: 1.5px solid #000 !important; }
+    .sig-label-top { color: #000 !important; }
+    .sig-sublabel { color: #000 !important; }
+    .sig-line { border-top: 2px solid #000 !important; }
+    .sig-hint { display: none !important; }
+
+    /* ── Force borders dark and thick ── */
+    .letterhead { border-bottom: 3px solid #000 !important; }
+    .info-box { border: 2px solid #000 !important; }
+    .info-left { border-right: 1.5px solid #000 !important; }
+    .service-table th {
+      border: 2px solid #000 !important;
+      color: #000 !important;
+      font-weight: 800 !important;
+      background: #f0f0f0 !important;
+    }
+    .service-table td {
+      border: 1.5px solid #000 !important;
+    }
+    .service-table td input, .service-table td textarea {
+      color: #000 !important;
+      font-weight: 500 !important;
+    }
+
+    /* ── Tags / selected items ── */
+    .tag { color: #000 !important; font-weight: 500 !important; }
+    .selected-tags .tag { color: #000 !important; }
   }
 
   @media (max-width: 640px) {
@@ -732,7 +775,8 @@ window.dispatchEvent(new Event('dbReady'));
     <button class="app-btn" onclick="clearForm()">↺ Clear</button>
     <button class="app-btn" onclick="saveReport()">✓ Save</button>
     <button class="app-btn" onclick="showRecords()" id="recordsBtn">☰ Records</button>
-    <button class="app-btn primary" onclick="window.print()">⎙ Print / PDF</button>
+    <button class="app-btn primary" onclick="printReport()">⎙ Print / PDF</button>
+    <button class="app-btn primary" onclick="downloadPDF()" id="dlBtn" style="background:#cc0000;border-color:#cc0000;color:#fff;">⤓ Export PDF</button>
   </div>
 </div>
 
@@ -1100,7 +1144,7 @@ async function refreshCtrlDropdown() {
 }
 
 async function checkCtrlUsed(ctrlText) {
-  const key = ctrlText.replace(/\s+/g, '_');
+  const key = ctrlText.split(' ').join('_');
   const badge = document.getElementById('ctrlUsedBadge');
   const saveBtn = document.querySelector('.app-btn[onclick="saveReport()"]');
   const used = await getUsedKeys();
@@ -1113,13 +1157,13 @@ async function checkCtrlUsed(ctrlText) {
   }
 }
 
-// Also refresh dropdown when year or month changes
-document.getElementById('ctrlYear').addEventListener('change', refreshCtrlDropdown);
-document.getElementById('ctrlMonth').addEventListener('change', refreshCtrlDropdown);
+// Also refresh dropdown when year or month changes — moved inside DOMContentLoaded
 
 document.addEventListener('DOMContentLoaded', () => {
   buildCtrlOptions();
   updateCtrlDisplay();
+  document.getElementById('ctrlYear').addEventListener('change', refreshCtrlDropdown);
+  document.getElementById('ctrlMonth').addEventListener('change', refreshCtrlDropdown);
   window.addEventListener('dbReady', () => {
     refreshCtrlDropdown();
   });
@@ -1240,7 +1284,7 @@ function collectFormData() {
 async function saveReport() {
   const data = collectFormData();
   const ctrlText = document.getElementById('controlNo').textContent || `${data._ctrlYear} ${data._ctrlMonth} ${data._ctrlNum}`;
-  const key = ctrlText.replace(/\s+/g,'_');
+  const key = ctrlText.split(' ').join('_');
   data['_ctrlText'] = ctrlText;
 
   const toast = document.getElementById('toast');
@@ -1384,6 +1428,376 @@ async function deleteRecord(key, local=false) {
 }
 
 
+
+// ── Address code names ────────────────────────────────────────
+const addrCodeMap = {
+  'Vitro Makati I': 'VM1',
+  'Vitro Makati II': 'VM2',
+  'Vitro Paranaque': 'VPQ',
+  'Vitro Taguig': 'VTG',
+  'Vitro Subic': 'VSB',
+  'Vitro Santa Rosa': 'VSR',
+  'Vitro Clark': 'VCK',
+  'Vitro Cebu 1': 'VC1',
+  'Vitro Cebu 2': 'VC2',
+  'Vitro Davao': 'VDO',
+  'Vitro Pasig': 'VPS'
+};
+
+function getAddrCode(addr) {
+  return addrCodeMap[addr] || addr.replace(/\s+/g,'').substring(0,4).toUpperCase();
+}
+
+function getFilenameDate() {
+  const d = document.getElementById('reportDate').value;
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  if (d) {
+    const dt = new Date(d + 'T00:00:00');
+    return months[dt.getMonth()] + ' ' + dt.getDate() + ', ' + dt.getFullYear();
+  }
+  const now = new Date();
+  return months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+}
+
+// ── Print with dynamic filename ───────────────────────────────
+function printReport() {
+  const ctrl = document.getElementById('controlNo').textContent ||
+    `${document.getElementById('ctrlYear').value} ${document.getElementById('ctrlMonth').value} ${document.getElementById('ctrlNum').value}`;
+
+  let desc = '';
+  document.querySelectorAll('#tableBody td.desc-cell textarea').forEach(ta => {
+    if (!desc && ta.value.trim()) desc = ta.value.trim().split('\n').join(' ').substring(0, 40);
+  });
+
+  const addrPrint = document.getElementById('addrPrintText').textContent.trim();
+  const addrChecked = document.querySelector('#addrMenu input:checked');
+  const addrTrigger = document.getElementById('addrTriggerText').textContent.trim();
+  const addrFinal = addrPrint || (addrChecked && addrChecked.value) || (addrTrigger !== '— select address —' ? addrTrigger : '');
+  const code = getAddrCode(addrFinal);
+  const fDate = getFilenameDate();
+
+  // Format: SR DESCRIPTION CODENAME - DATE
+  const parts = [desc, code].filter(p => p && p.trim());
+  const filename = 'SR ' + (parts.length ? parts.join(' ') + ' - ' + fDate : 'LITRAD Service Report');
+
+  document.title = filename;
+  window.print();
+
+  const restore = () => {
+    document.title = 'LITRAD INC. — Service Report';
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+}
+
+
+
+// ── Export PDF directly (jsPDF text-based, vector — sharp & clear) ──
+// Matches the Print/PDF layout exactly
+function downloadPDF() {
+  const btn = document.getElementById('dlBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating…';
+
+  try {
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF({orientation:'portrait', unit:'pt', format:'a4'});
+    const pageW = doc.internal.pageSize.getWidth();  // ~595
+    const pageH = doc.internal.pageSize.getHeight(); // ~842
+    const mL = 50, mR = 50;
+    const usableW = pageW - mL - mR;
+    let curY = 44;
+
+    // ══════════════════════════════════════════════════
+    // LETTERHEAD — logo left, company info centered
+    // ══════════════════════════════════════════════════
+    const logoImg = document.querySelector('.logo-diamond img');
+    if (logoImg) {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = logoImg.naturalWidth || 80;
+        canvas.height = logoImg.naturalHeight || 80;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
+        const logoData = canvas.toDataURL('image/png');
+        doc.addImage(logoData, 'PNG', mL, curY - 6, 62, 62);
+      } catch(e) { /* logo not critical */ }
+    }
+
+    // Company info — centered in page
+    const centerX = pageW / 2;
+    doc.setFont('times','normal'); doc.setFontSize(10); doc.setTextColor(0,0,0);
+    doc.text('4 Mexico Street, BLS, Parañaque City 1711, Philippines', centerX, curY + 12, {align:'center'});
+    doc.setFontSize(9);
+    doc.text('Telefax: (02) 8821 8323  |  Email: litradinc99@gmail.com', centerX, curY + 25, {align:'center'});
+    doc.text('TIN: 202-313-496-000  |  VAT Registered', centerX, curY + 38, {align:'center'});
+
+    // Thick horizontal line
+    curY += 56;
+    doc.setDrawColor(0,0,0); doc.setLineWidth(2.5);
+    doc.line(mL, curY, pageW - mR, curY);
+    curY += 24;
+
+    // ══════════════════════════════════════════════════
+    // CONTROL NO — right-aligned, bold serif, one line
+    // ══════════════════════════════════════════════════
+    const ctrlText = document.getElementById('controlNo').textContent ||
+      `${document.getElementById('ctrlYear').value} ${document.getElementById('ctrlMonth').value} ${document.getElementById('ctrlNum').value}`;
+
+    doc.setFont('times','bold'); doc.setFontSize(11); doc.setTextColor(0,0,0);
+    const ctrlFull = 'CONTROL NO. ' + ctrlText;
+    doc.text(ctrlFull, pageW - mR, curY, {align:'right'});
+    curY += 28;
+
+    // ══════════════════════════════════════════════════
+    // TITLE — "SERVICE REPORT" centered, large bold serif
+    // ══════════════════════════════════════════════════
+    doc.setFont('times','bold'); doc.setFontSize(18); doc.setTextColor(0,0,0);
+    // Letter-spaced title
+    const titleText = 'SERVICE REPORT';
+    const spacedTitle = titleText.split('').join(' ');
+    doc.text(spacedTitle, centerX, curY, {align:'center'});
+    curY += 28;
+
+    // ══════════════════════════════════════════════════
+    // INFO BOX
+    // ══════════════════════════════════════════════════
+    const reportDate = document.getElementById('reportDate').value || '';
+    const clientName = document.getElementById('clientName').value || '';
+    const addrPrint = document.getElementById('addrPrintText').textContent.trim();
+    const addrChecked = document.querySelector('#addrMenu input:checked');
+    const addrTrigger = document.getElementById('addrTriggerText').textContent.trim();
+    const address = addrPrint || (addrChecked && addrChecked.value) || (addrTrigger !== '— select address —' ? addrTrigger : '');
+    const supPrint = document.getElementById('supPrintText').textContent.trim();
+    const supTrigger = document.getElementById('supTriggerText').textContent.trim();
+    const supervisor = supPrint || (supTrigger !== '— select —' ? supTrigger : '');
+
+    // Team members as individual names
+    const teamTags = [];
+    document.querySelectorAll('#teamTags .tag').forEach(tag => {
+      const t = tag.textContent.replace('×','').trim();
+      if (t) teamTags.push(t);
+    });
+    if (!teamTags.length) {
+      document.querySelectorAll('#teamMenu input:checked').forEach(cb => teamTags.push(cb.value));
+    }
+
+    // Format date as MM/DD/YYYY
+    let dateDisplay = reportDate;
+    if (reportDate) {
+      try {
+        const d = new Date(reportDate + 'T00:00:00');
+        dateDisplay = String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0') + '/' + d.getFullYear();
+      } catch(e) {}
+    }
+
+    // Calculate box height based on team members
+    const lineH = 20;
+    const leftRows = 3; // Date, Client, Address
+    const rightRows = Math.max(2, 2 + teamTags.length); // Supervisor + Team label + team names
+    const infoRows = Math.max(leftRows, rightRows);
+    const infoBoxH = infoRows * lineH + 16;
+    const halfW = usableW / 2;
+    const boxY = curY;
+
+    // Draw box border
+    doc.setDrawColor(0,0,0); doc.setLineWidth(1);
+    doc.rect(mL, boxY, usableW, infoBoxH);
+    // Vertical divider
+    doc.setLineWidth(0.5);
+    doc.line(mL + halfW, boxY, mL + halfW, boxY + infoBoxH);
+
+    // Left column
+    const leftX = mL + 10;
+    const leftValX = mL + 70;
+    let iy = boxY + 18;
+    const labelFS = 10, valFS = 10;
+
+    doc.setFont('times','bold'); doc.setFontSize(labelFS); doc.setTextColor(0,0,0);
+    doc.text('Date :', leftX, iy);
+    doc.setFont('times','normal'); doc.setFontSize(valFS);
+    doc.text(dateDisplay, leftValX, iy);
+    iy += lineH;
+
+    doc.setFont('times','bold'); doc.setFontSize(labelFS);
+    doc.text('Client :', leftX, iy);
+    doc.setFont('times','normal'); doc.setFontSize(valFS);
+    doc.text(clientName, leftValX, iy);
+    iy += lineH;
+
+    doc.setFont('times','bold'); doc.setFontSize(labelFS);
+    doc.text('Address :', leftX, iy);
+    doc.setFont('times','normal'); doc.setFontSize(valFS);
+    doc.text(address, leftValX, iy);
+
+    // Right column
+    const rightX = mL + halfW + 10;
+    const rightValX = mL + halfW + 110;
+    let ry = boxY + 18;
+
+    doc.setFont('times','bold'); doc.setFontSize(labelFS); doc.setTextColor(0,0,0);
+    doc.text('Service Supervisor :', rightX, ry);
+    doc.setFont('times','normal'); doc.setFontSize(valFS);
+    doc.text(supervisor, rightValX, ry);
+    ry += lineH;
+
+    doc.setFont('times','bold'); doc.setFontSize(labelFS);
+    doc.text('Service Team :', rightX, ry);
+    // List team members vertically
+    doc.setFont('times','normal'); doc.setFontSize(valFS);
+    teamTags.forEach((name, i) => {
+      doc.text(name, rightValX, ry + (i * lineH));
+    });
+
+    curY = boxY + infoBoxH + 18;
+
+    // ══════════════════════════════════════════════════
+    // SERVICE TABLE
+    // ══════════════════════════════════════════════════
+    const rows = [];
+    document.querySelectorAll('#tableBody tr').forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      if (cells.length >= 5) {
+        const qty = (cells[0].querySelector('input') || {}).value || '';
+        const desc = (cells[1].querySelector('textarea') || {}).value || '';
+        const loc = (cells[2].querySelector('textarea') || {}).value || '';
+        const com = (cells[3].querySelector('input') || cells[3].querySelector('textarea') || {}).value || '';
+        const rem = (cells[4].querySelector('input') || cells[4].querySelector('textarea') || {}).value || '';
+        if (qty || desc || loc || com || rem) {
+          rows.push([qty, desc, loc, com, rem]);
+        }
+      }
+    });
+
+    if (!rows.length) {
+      for (let i = 0; i < 3; i++) rows.push(['', '', '', '', '']);
+    }
+
+    doc.autoTable({
+      startY: curY,
+      margin: {left: mL, right: mR},
+      tableWidth: usableW,
+      head: [['Quantity', 'Description', 'Location', 'Comments', 'Remarks']],
+      body: rows,
+      styles: {
+        font: 'times', fontSize: 10, cellPadding: {top:6,bottom:6,left:5,right:5},
+        lineColor: [0,0,0], lineWidth: 0.8, textColor: [0,0,0], overflow: 'linebreak',
+        minCellHeight: 30
+      },
+      headStyles: {
+        fillColor: [255,255,255], textColor: [0,0,0], fontStyle: 'bold',
+        fontSize: 10, halign: 'center',
+        lineColor: [0,0,0], lineWidth: 0.8
+      },
+      columnStyles: {
+        0: {halign:'center', cellWidth: 60},
+        1: {halign:'center', cellWidth: usableW * 0.30},
+        2: {halign:'center', cellWidth: 80},
+        3: {halign:'center', cellWidth: usableW * 0.18},
+        4: {halign:'center'}
+      },
+      theme: 'grid'
+    });
+
+    curY = doc.lastAutoTable.finalY + 20;
+
+    // ══════════════════════════════════════════════════
+    // FOOTER FIELDS — each on its own line
+    // ══════════════════════════════════════════════════
+    const contactPerson = (document.getElementById('contactPerson') || {}).value || '';
+    const prepPrint = document.getElementById('prepPrintText').textContent.trim();
+    const prepTrigger = document.getElementById('prepTriggerText').textContent.trim();
+    const preparedBy = prepPrint || (prepTrigger !== '— select —' ? prepTrigger : '');
+
+    // Contact Person
+    doc.setFont('times','bold'); doc.setFontSize(10); doc.setTextColor(0,0,0);
+    doc.text('Contact Person :', mL, curY);
+    doc.setFont('times','bold'); doc.setFontSize(10);
+    doc.text(contactPerson, mL + 90, curY);
+    doc.setDrawColor(0,0,0); doc.setLineWidth(0.5);
+    doc.line(mL + 90, curY + 2, mL + usableW * 0.5, curY + 2);
+    curY += 20;
+
+    // Prepared by
+    doc.setFont('times','bold'); doc.setFontSize(10);
+    doc.text('Prepared by :', mL, curY);
+    doc.setFont('times','normal'); doc.setFontSize(10);
+    doc.text(preparedBy, mL + 76, curY);
+    curY += 32;
+
+    // ══════════════════════════════════════════════════
+    // CUSTOMER'S REPRESENTATIVE — right-aligned with box
+    // ══════════════════════════════════════════════════
+    if (curY + 130 > pageH - 40) {
+      doc.addPage();
+      curY = 50;
+    }
+
+    // Right-aligned section
+    const sigBoxW = 250;
+    const sigBoxH = 70;
+    const sigBoxX = pageW - mR - sigBoxW;
+
+    // Label centered above box
+    doc.setFont('times','bold'); doc.setFontSize(10); doc.setTextColor(0,0,0);
+    const custRepText = "Customer's Representative";
+    doc.text(custRepText, sigBoxX + sigBoxW / 2, curY, {align:'center'});
+    curY += 12;
+
+    // Signature box border
+    doc.setDrawColor(0,0,0); doc.setLineWidth(0.8);
+    doc.rect(sigBoxX, curY, sigBoxW, sigBoxH);
+
+    // Signature from canvas inside the box
+    const sigCanvas = document.getElementById('sigCanvas');
+    if (sigCanvas) {
+      try {
+        const sigData = sigCanvas.toDataURL('image/png');
+        const ctx = sigCanvas.getContext('2d');
+        const pixels = ctx.getImageData(0, 0, sigCanvas.width, sigCanvas.height).data;
+        let hasContent = false;
+        for (let i = 3; i < pixels.length; i += 4) {
+          if (pixels[i] > 0) { hasContent = true; break; }
+        }
+        if (hasContent) {
+          doc.addImage(sigData, 'PNG', sigBoxX + 10, curY + 4, sigBoxW - 20, sigBoxH - 8);
+        }
+      } catch(e) { /* signature not critical */ }
+    }
+
+    curY += sigBoxH + 10;
+    // "Signature over Printed Name" italic, centered under box
+    doc.setFont('times','italic'); doc.setFontSize(9); doc.setTextColor(0,0,0);
+    doc.text('Signature over Printed Name', sigBoxX + sigBoxW / 2, curY, {align:'center'});
+
+    // ══════════════════════════════════════════════════
+    // FILENAME & SAVE
+    // ══════════════════════════════════════════════════
+    let desc = '';
+    document.querySelectorAll('#tableBody td.desc-cell textarea').forEach(ta => {
+      if (!desc && ta.value.trim()) desc = ta.value.trim().split('\n').join(' ').substring(0, 40);
+    });
+    const code = getAddrCode(address);
+    const fDate = getFilenameDate();
+
+    // Format: SR DESCRIPTION CODENAME - DATE.pdf
+    const fParts = [desc, code].filter(p => p && p.trim());
+    const filename = 'SR ' + (fParts.length ? fParts.join(' ') + ' - ' + fDate : 'LITRAD Service Report') + '.pdf';
+
+    doc.save(filename);
+
+    const toast = document.getElementById('toast');
+    toast.textContent = `✓ Downloaded: ${filename}`;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  } catch(err) {
+    alert('PDF generation failed: ' + err.message);
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⤓ Export PDF';
+  }
+}
 
 // ── Clear ──────────────────────────────────────────────────────
 function clearForm() {
