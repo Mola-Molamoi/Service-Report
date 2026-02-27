@@ -1494,7 +1494,7 @@ function printReport() {
 
 // ── Export PDF directly (jsPDF text-based, vector — sharp & clear) ──
 // Matches the Print/PDF layout exactly
-function downloadPDF() {
+async function downloadPDF() {
   const btn = document.getElementById('dlBtn');
   btn.disabled = true;
   btn.textContent = '⏳ Generating…';
@@ -1587,7 +1587,8 @@ function downloadPDF() {
     if (reportDate) {
       try {
         const d = new Date(reportDate + 'T00:00:00');
-        dateDisplay = String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0') + '/' + d.getFullYear();
+        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        dateDisplay = monthNames[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
       } catch(e) {}
     }
 
@@ -1643,10 +1644,11 @@ function downloadPDF() {
 
     doc.setFont('times','bold'); doc.setFontSize(labelFS);
     doc.text('Service Team :', rightX, ry);
-    // List team members vertically
+    // List team members vertically — aligned closer to label (matching supervisor gap)
+    const teamValX = rightX + 82;
     doc.setFont('times','normal'); doc.setFontSize(valFS);
     teamTags.forEach((name, i) => {
-      doc.text(name, rightValX, ry + (i * lineH));
+      doc.text(name, teamValX, ry + (i * lineH));
     });
 
     curY = boxY + infoBoxH + 18;
@@ -1786,8 +1788,11 @@ function downloadPDF() {
 
     doc.save(filename);
 
+    // Auto-save to records
+    await saveReport();
+
     const toast = document.getElementById('toast');
-    toast.textContent = `✓ Downloaded: ${filename}`;
+    toast.textContent = `✓ Downloaded & Saved: ${filename}`;
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
   } catch(err) {
