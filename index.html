@@ -435,6 +435,7 @@ window.dispatchEvent(new Event('dbReady'));
     border-collapse: collapse;
     margin-bottom: 24px;
     font-size: 13px;
+    table-layout: fixed;
   }
 
   .service-table th {
@@ -446,12 +447,16 @@ window.dispatchEvent(new Event('dbReady'));
     font-size: 12px;
     background: #f8f6f3;
     letter-spacing: 0.02em;
+    position: relative;
+    overflow: hidden;
   }
 
   .service-table td {
     border: 1.5px solid #555;
     padding: 0;
     vertical-align: top;
+    position: relative;
+    overflow: hidden;
   }
 
   .service-table td input,
@@ -467,21 +472,55 @@ window.dispatchEvent(new Event('dbReady'));
     resize: none;
     min-height: 64px;
     line-height: 1.5;
+    display: block;
   }
 
   .service-table td input { min-height: auto; height: 64px; text-align: center; }
-  .service-table td.desc-cell { min-width: 200px; text-align: center; }
+  .service-table td.desc-cell { text-align: center; }
   .service-table td.desc-cell textarea { text-align: center; }
-  .service-table td.qty-cell { width: 70px; }
-  .service-table td.loc-cell { width: 120px; text-align: center; }
+  .service-table td.loc-cell { text-align: center; }
   .service-table td.loc-cell textarea { text-align: center; }
-  .service-table td.com-cell { width: 130px; }
-  .service-table td.rem-cell { width: 130px; }
   .service-table td.action-cell { width: 24px; border: none; vertical-align: middle; padding: 2px 0; }
 
   .service-table td input:focus,
   .service-table td textarea:focus {
     background: #fffbf0;
+  }
+
+  /* ── Column resize handle ── */
+  .col-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    z-index: 10;
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .col-resize-handle:hover,
+  .col-resize-handle.active {
+    background: var(--gold);
+    opacity: 0.5;
+  }
+
+  /* ── Row resize handle ── */
+  .row-resize-handle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 5px;
+    cursor: row-resize;
+    z-index: 10;
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .row-resize-handle:hover,
+  .row-resize-handle.active {
+    background: var(--gold);
+    opacity: 0.5;
   }
 
   .btn-rm-row {
@@ -497,6 +536,44 @@ window.dispatchEvent(new Event('dbReady'));
     margin: auto;
   }
   .btn-rm-row:hover { color: #e55; }
+
+  /* Column header with editable name & remove btn */
+  .service-table th.col-header {
+    position: relative;
+    padding: 4px 6px;
+  }
+  .col-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .col-name-input {
+    border: none;
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.02em;
+    outline: none;
+    width: 100%;
+    min-width: 50px;
+    color: var(--ink);
+  }
+  .col-name-input:focus { background: #fffbf0; }
+  .btn-rm-col {
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    padding: 0 2px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-rm-col:hover { color: #e55; }
 
   .add-row-wrap {
     display: flex;
@@ -707,6 +784,9 @@ window.dispatchEvent(new Event('dbReady'));
     .doc { box-shadow: none; padding: 24px 32px; color: #000 !important; }
     .add-row-wrap { display: none !important; }
     .btn-rm-row, .btn-rm-team, .btn-add-team, .tag-remove { display: none !important; }
+    .btn-rm-col { display: none !important; }
+    .col-name-input { pointer-events: none; }
+    .col-resize-handle, .row-resize-handle { display: none !important; }
     .dropdown-trigger, .sup-trigger, .addr-trigger { display: none !important; }
     .ctrl-year, .ctrl-month, .ctrl-num { display: none !important; }
     .print-only-text { display: inline !important; color: #000 !important; font-weight: 600 !important; }
@@ -894,13 +974,8 @@ window.dispatchEvent(new Event('dbReady'));
     <!-- Service Table -->
     <table class="service-table" id="serviceTable">
       <thead>
-        <tr>
-          <th class="qty-cell">Quantity</th>
-          <th class="desc-cell">Description</th>
-          <th class="loc-cell">Location</th>
-          <th class="com-cell">Comments</th>
-          <th class="rem-cell">Remarks</th>
-          <th class="action-cell" style="border:none; background:transparent;"></th>
+        <tr id="tableHead">
+          <!-- columns built by JS -->
         </tr>
       </thead>
       <tbody id="tableBody">
@@ -976,25 +1051,195 @@ window.dispatchEvent(new Event('dbReady'));
 const today = new Date();
 document.getElementById('reportDate').value = today.toISOString().split('T')[0];
 
+// ── Column definitions ──────────────────────────────────────────
+// Default columns: each has a name, a key (used for save/load), and optional cell class
+let tableColumns = [
+  { name: 'Quantity', key: 'qty', cellClass: 'qty-cell', inputType: 'input', style: 'text-align:center;' },
+  { name: 'Description', key: 'desc', cellClass: 'desc-cell', inputType: 'textarea', style: 'text-align:center;' },
+  { name: 'Location', key: 'loc', cellClass: 'loc-cell', inputType: 'textarea', style: 'text-align:center;' },
+  { name: 'Comments', key: 'com', cellClass: '', inputType: 'textarea', style: '' },
+  { name: 'Remarks', key: 'rem', cellClass: '', inputType: 'textarea', style: '' }
+];
+
+function renderTableHead() {
+  const thead = document.getElementById('tableHead');
+  thead.innerHTML = '';
+  tableColumns.forEach((col, i) => {
+    const th = document.createElement('th');
+    th.className = 'col-header ' + (col.cellClass || '');
+    if (col.width) th.style.width = col.width + 'px';
+    const canRemove = tableColumns.length > 1;
+    th.innerHTML = `
+      <div class="col-header-inner">
+        <input type="text" class="col-name-input" value="${col.name}" onchange="renameColumn(${i}, this.value)">
+        ${canRemove ? `<button class="btn-rm-col" onclick="removeColumn(${i})" title="Remove column">×</button>` : ''}
+      </div>
+      <div class="col-resize-handle" data-col="${i}"></div>
+    `;
+    thead.appendChild(th);
+  });
+  // Action cell (row remove)
+  const actTh = document.createElement('th');
+  actTh.className = 'action-cell';
+  actTh.style.cssText = 'border:none; background:transparent;';
+  thead.appendChild(actTh);
+
+  // Attach column resize listeners
+  initColResize();
+}
+
+function renameColumn(index, newName) {
+  tableColumns[index].name = newName;
+}
+
+function addColumn(name) {
+  const colName = name || 'New Column';
+  const colKey = 'col_' + Date.now();
+  tableColumns.push({ name: colName, key: colKey, cellClass: '', inputType: 'textarea', style: '' });
+  renderTableHead();
+  // Add a cell to each existing row
+  document.querySelectorAll('#tableBody tr').forEach(tr => {
+    const actionCell = tr.querySelector('.action-cell');
+    const td = document.createElement('td');
+    const h = tr.offsetHeight || 64;
+    td.innerHTML = `<textarea style="height:${h}px; min-height:${h}px;"></textarea>`;
+    const handle = document.createElement('div');
+    handle.className = 'row-resize-handle';
+    handle.setAttribute('data-row-handle', 'true');
+    td.appendChild(handle);
+    tr.insertBefore(td, actionCell);
+  });
+}
+
+function removeColumn(index) {
+  if (tableColumns.length <= 1) return;
+  if (!confirm(`Remove column "${tableColumns[index].name}"?`)) return;
+  tableColumns.splice(index, 1);
+  renderTableHead();
+  // Remove corresponding cell from each row
+  document.querySelectorAll('#tableBody tr').forEach(tr => {
+    const cells = tr.querySelectorAll('td:not(.action-cell)');
+    if (cells[index]) cells[index].remove();
+  });
+}
+
 // ── Table rows ─────────────────────────────────────────────────
-function addRow(qty='', desc='', loc='', com='', rem='') {
+function addRow(values, rowHeight) {
+  // values is an object keyed by column key, or an array by index
   const tbody = document.getElementById('tableBody');
   const tr = document.createElement('tr');
-  tr.innerHTML = `
-    <td class="qty-cell"><input type="text" value="${qty}"></td>
-    <td class="desc-cell"><textarea>${desc}</textarea></td>
-    <td class="loc-cell"><textarea>${loc}</textarea></td>
-    <td class="com-cell"><textarea>${com}</textarea></td>
-    <td class="rem-cell"><textarea>${rem}</textarea></td>
-    <td class="action-cell"><button class="btn-rm-row" onclick="this.closest('tr').remove()" title="Remove row">×</button></td>
-  `;
+  if (rowHeight) tr.style.height = rowHeight + 'px';
+  tableColumns.forEach((col, i) => {
+    const td = document.createElement('td');
+    if (col.cellClass) td.className = col.cellClass;
+    let val = '';
+    if (values) {
+      if (Array.isArray(values)) val = values[i] || '';
+      else val = values[col.key] || '';
+    }
+    const h = rowHeight ? rowHeight : 64;
+    if (col.inputType === 'input') {
+      td.innerHTML = `<input type="text" value="${escHtml(val)}" style="text-align:center; height:${h}px; min-height:${h}px;">`;
+    } else {
+      td.innerHTML = `<textarea style="${col.style || ''} height:${h}px; min-height:${h}px;">${escHtml(val)}</textarea>`;
+    }
+    // Row resize handle on every cell
+    const handle = document.createElement('div');
+    handle.className = 'row-resize-handle';
+    handle.setAttribute('data-row-handle', 'true');
+    td.appendChild(handle);
+    tr.appendChild(td);
+  });
+  // Action cell
+  const actTd = document.createElement('td');
+  actTd.className = 'action-cell';
+  actTd.innerHTML = `<button class="btn-rm-row" onclick="this.closest('tr').remove()" title="Remove row">×</button>`;
+  tr.appendChild(actTd);
   tbody.appendChild(tr);
 }
 
-// Default rows
-addRow();
-addRow();
-addRow();
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Build initial table
+renderTableHead();
+addRow(); addRow(); addRow();
+
+// ── Column Resize ─────────────────────────────────────────────
+function initColResize() {
+  document.querySelectorAll('.col-resize-handle').forEach(handle => {
+    handle.addEventListener('mousedown', startColResize);
+    handle.addEventListener('touchstart', startColResize, {passive:false});
+  });
+}
+
+function startColResize(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const handle = e.currentTarget;
+  handle.classList.add('active');
+  const th = handle.parentElement;
+  const colIdx = parseInt(handle.getAttribute('data-col'));
+  const startX = e.touches ? e.touches[0].clientX : e.clientX;
+  const startW = th.offsetWidth;
+
+  function onMove(ev) {
+    const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    const newW = Math.max(50, startW + (x - startX));
+    th.style.width = newW + 'px';
+    tableColumns[colIdx].width = newW;
+  }
+  function onUp() {
+    handle.classList.remove('active');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchmove', onMove, {passive:false});
+  document.addEventListener('touchend', onUp);
+}
+
+// ── Row Resize ────────────────────────────────────────────────
+document.getElementById('serviceTable').addEventListener('mousedown', startRowResize);
+document.getElementById('serviceTable').addEventListener('touchstart', startRowResize, {passive:false});
+
+function startRowResize(e) {
+  const handle = e.target.closest('.row-resize-handle');
+  if (!handle) return;
+  e.preventDefault();
+  e.stopPropagation();
+  handle.classList.add('active');
+
+  const tr = handle.closest('tr');
+  const startY = e.touches ? e.touches[0].clientY : e.clientY;
+  const startH = tr.offsetHeight;
+
+  function onMove(ev) {
+    const y = ev.touches ? ev.touches[0].clientY : ev.clientY;
+    const newH = Math.max(36, startH + (y - startY));
+    tr.style.height = newH + 'px';
+    // Also resize all inputs/textareas in row
+    tr.querySelectorAll('input, textarea').forEach(el => {
+      el.style.height = newH + 'px';
+      el.style.minHeight = newH + 'px';
+    });
+  }
+  function onUp() {
+    handle.classList.remove('active');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onUp);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchmove', onMove, {passive:false});
+  document.addEventListener('touchend', onUp);
+}
 
 // Load any previously saved data
 try { loadSavedReport(); } catch(e) {}
@@ -1266,14 +1511,16 @@ function collectFormData() {
   data['_ctrlYear'] = document.getElementById('ctrlYear').value;
   data['_ctrlMonth'] = document.getElementById('ctrlMonth').value;
   data['_ctrlNum'] = document.getElementById('ctrlNum').value;
+  data['_columns'] = tableColumns.map(c => ({ name: c.name, key: c.key, cellClass: c.cellClass || '', inputType: c.inputType || 'textarea', style: c.style || '', width: c.width || null }));
   const rows = [];
   document.querySelectorAll('#tableBody tr').forEach(tr => {
-    const cells = tr.querySelectorAll('td');
+    const cells = tr.querySelectorAll('td:not(.action-cell)');
     const row = {};
-    ['qty','desc','loc','com','rem'].forEach((k,i) => {
+    tableColumns.forEach((col, i) => {
       const el = cells[i] && cells[i].querySelector('input,textarea');
-      if (el) row[k] = el.value;
+      if (el) row[col.key] = el.value;
     });
+    row['_rowHeight'] = tr.offsetHeight || null;
     rows.push(row);
   });
   data['_rows'] = rows;
@@ -1328,9 +1575,20 @@ function loadReportData(data) {
     const radio = document.querySelector(`#addrMenu input[value="${data['_addr']}"]`);
     if (radio) { radio.checked = true; selectAddr(radio); }
   }
+  if (data['_columns'] && data['_columns'].length) {
+    tableColumns = data['_columns'].map(c => ({
+      name: c.name, key: c.key,
+      cellClass: c.cellClass || '', inputType: c.inputType || 'textarea', style: c.style || '',
+      width: c.width || null
+    }));
+    renderTableHead();
+  }
   if (data['_rows'] && data['_rows'].length) {
     document.getElementById('tableBody').innerHTML = '';
-    data['_rows'].forEach(r => addRow(r.qty||'', r.desc||'', r.loc||'', r.com||'', r.rem||''));
+    data['_rows'].forEach(r => {
+      const rh = r['_rowHeight'] || null;
+      addRow(r, rh);
+    });
   }
 }
 
@@ -1465,8 +1723,15 @@ function printReport() {
     `${document.getElementById('ctrlYear').value} ${document.getElementById('ctrlMonth').value} ${document.getElementById('ctrlNum').value}`;
 
   let desc = '';
-  document.querySelectorAll('#tableBody td.desc-cell textarea').forEach(ta => {
-    if (!desc && ta.value.trim()) desc = ta.value.trim().split('\n').join(' ').substring(0, 40);
+  const pDescIdx = tableColumns.findIndex(c => c.name.toLowerCase().includes('description'));
+  const pDescColIdx = pDescIdx >= 0 ? pDescIdx : (tableColumns.length > 1 ? 1 : 0);
+  document.querySelectorAll('#tableBody tr').forEach(tr => {
+    const cells = tr.querySelectorAll('td:not(.action-cell)');
+    const cell = cells[pDescColIdx];
+    if (!desc && cell) {
+      const ta = cell.querySelector('textarea') || cell.querySelector('input');
+      if (ta && ta.value.trim()) desc = ta.value.trim().split('\n').join(' ').substring(0, 40);
+    }
   });
 
   const addrPrint = document.getElementById('addrPrintText').textContent.trim();
@@ -1656,30 +1921,38 @@ async function downloadPDF() {
     // ══════════════════════════════════════════════════
     // SERVICE TABLE
     // ══════════════════════════════════════════════════
+    const colNames = tableColumns.map(c => c.name);
     const rows = [];
     document.querySelectorAll('#tableBody tr').forEach(tr => {
-      const cells = tr.querySelectorAll('td');
-      if (cells.length >= 5) {
-        const qty = (cells[0].querySelector('input') || {}).value || '';
-        const desc = (cells[1].querySelector('textarea') || {}).value || '';
-        const loc = (cells[2].querySelector('textarea') || {}).value || '';
-        const com = (cells[3].querySelector('input') || cells[3].querySelector('textarea') || {}).value || '';
-        const rem = (cells[4].querySelector('input') || cells[4].querySelector('textarea') || {}).value || '';
-        if (qty || desc || loc || com || rem) {
-          rows.push([qty, desc, loc, com, rem]);
-        }
+      const cells = tr.querySelectorAll('td:not(.action-cell)');
+      const rowData = [];
+      tableColumns.forEach((col, i) => {
+        const el = cells[i] && cells[i].querySelector('input,textarea');
+        rowData.push(el ? el.value : '');
+      });
+      if (rowData.some(v => v.trim())) {
+        rows.push(rowData);
       }
     });
 
     if (!rows.length) {
-      for (let i = 0; i < 3; i++) rows.push(['', '', '', '', '']);
+      rows.push(tableColumns.map(() => ''));
+      rows.push(tableColumns.map(() => ''));
+      rows.push(tableColumns.map(() => ''));
     }
+
+    // Build column styles dynamically
+    const colCount = tableColumns.length;
+    const colStyles = {};
+    tableColumns.forEach((col, i) => {
+      colStyles[i] = { halign: 'center' };
+    });
 
     doc.autoTable({
       startY: curY,
       margin: {left: mL, right: mR},
       tableWidth: usableW,
-      head: [['Quantity', 'Description', 'Location', 'Comments', 'Remarks']],
+      head: [colNames],
       body: rows,
       styles: {
         font: 'times', fontSize: 10, cellPadding: {top:6,bottom:6,left:5,right:5},
@@ -1691,13 +1964,7 @@ async function downloadPDF() {
         fontSize: 10, halign: 'center',
         lineColor: [0,0,0], lineWidth: 0.8
       },
-      columnStyles: {
-        0: {halign:'center', cellWidth: 60},
-        1: {halign:'center', cellWidth: usableW * 0.30},
-        2: {halign:'center', cellWidth: 80},
-        3: {halign:'center', cellWidth: usableW * 0.18},
-        4: {halign:'center'}
-      },
+      columnStyles: colStyles,
       theme: 'grid'
     });
 
@@ -1776,8 +2043,16 @@ async function downloadPDF() {
     // FILENAME & SAVE
     // ══════════════════════════════════════════════════
     let desc = '';
-    document.querySelectorAll('#tableBody td.desc-cell textarea').forEach(ta => {
-      if (!desc && ta.value.trim()) desc = ta.value.trim().split('\n').join(' ').substring(0, 40);
+    // Find description column index (look for column named "Description" or use second column)
+    const descIdx = tableColumns.findIndex(c => c.name.toLowerCase().includes('description'));
+    const descColIdx = descIdx >= 0 ? descIdx : (tableColumns.length > 1 ? 1 : 0);
+    document.querySelectorAll('#tableBody tr').forEach(tr => {
+      const cells = tr.querySelectorAll('td:not(.action-cell)');
+      const cell = cells[descColIdx];
+      if (!desc && cell) {
+        const ta = cell.querySelector('textarea') || cell.querySelector('input');
+        if (ta && ta.value.trim()) desc = ta.value.trim().split('\n').join(' ').substring(0, 40);
+      }
     });
     const code = getAddrCode(address);
     const fDate = getFilenameDate();
@@ -1811,7 +2086,15 @@ function clearForm() {
     if (el.id === 'reportDate') el.value = today.toISOString().split('T')[0];
     else if (!el.classList.contains('ctrl-month') && !el.classList.contains('ctrl-year')) el.value = '';
   });
-  // Reset table
+  // Reset table columns and rows
+  tableColumns = [
+    { name: 'Quantity', key: 'qty', cellClass: 'qty-cell', inputType: 'input', style: 'text-align:center;', width: null },
+    { name: 'Description', key: 'desc', cellClass: 'desc-cell', inputType: 'textarea', style: 'text-align:center;', width: null },
+    { name: 'Location', key: 'loc', cellClass: 'loc-cell', inputType: 'textarea', style: 'text-align:center;', width: null },
+    { name: 'Comments', key: 'com', cellClass: '', inputType: 'textarea', style: '', width: null },
+    { name: 'Remarks', key: 'rem', cellClass: '', inputType: 'textarea', style: '', width: null }
+  ];
+  renderTableHead();
   document.getElementById('tableBody').innerHTML = '';
   addRow(); addRow(); addRow();
   // Reset all dropdowns
