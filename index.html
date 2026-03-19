@@ -452,7 +452,7 @@ window.dispatchEvent(new Event('dbReady'));
   }
 
   .service-table td {
-    border: 1.5px solid #555;
+    border: 1.5px solid var(--ink);
     padding: 0;
     vertical-align: top;
     position: relative;
@@ -795,6 +795,7 @@ window.dispatchEvent(new Event('dbReady'));
     .btn-clear-sig { display: none !important; }
     input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
     input[type="date"] { -webkit-appearance: none; appearance: none; }
+    #reportDate { display: none !important; }
 
     /* ── Force all text pure black ── */
     .company-info p, .company-info a { color: #000 !important; font-weight: 500 !important; }
@@ -820,13 +821,17 @@ window.dispatchEvent(new Event('dbReady'));
     .info-box { border: 2px solid #000 !important; }
     .info-left { border-right: 1.5px solid #000 !important; }
     .service-table th {
-      border: 2px solid #000 !important;
+      border: 1px solid #000 !important;
       color: #000 !important;
       font-weight: 800 !important;
       background: #f0f0f0 !important;
+      position: static !important;
+      overflow: visible !important;
     }
     .service-table td {
-      border: 1.5px solid #000 !important;
+      border: 1px solid #000 !important;
+      position: static !important;
+      overflow: visible !important;
     }
     .service-table td input, .service-table td textarea {
       color: #000 !important;
@@ -902,6 +907,7 @@ window.dispatchEvent(new Event('dbReady'));
         <div class="info-row">
           <span class="info-key">Date&nbsp;:</span>
           <input class="info-val" type="date" id="reportDate">
+          <span class="print-only-text" id="datePrintText"></span>
         </div>
         <div class="info-row">
           <span class="info-key">Client&nbsp;:</span>
@@ -1050,6 +1056,20 @@ window.dispatchEvent(new Event('dbReady'));
 // ── Init date ──────────────────────────────────────────────────
 const today = new Date();
 document.getElementById('reportDate').value = today.toISOString().split('T')[0];
+
+// ── Update date print text ────────────────────────────────────
+function updateDatePrintText() {
+  const val = document.getElementById('reportDate').value;
+  const span = document.getElementById('datePrintText');
+  if (!val || !span) return;
+  try {
+    const d = new Date(val + 'T00:00:00');
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    span.textContent = monthNames[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  } catch(e) { span.textContent = val; }
+}
+document.getElementById('reportDate').addEventListener('change', updateDatePrintText);
+updateDatePrintText();
 
 // ── Column definitions ──────────────────────────────────────────
 // Default columns: each has a name, a key (used for save/load), and optional cell class
@@ -1590,6 +1610,7 @@ function loadReportData(data) {
       addRow(r, rh);
     });
   }
+  updateDatePrintText();
 }
 
 function loadSavedReport() {} // no auto-load; user uses Records panel
@@ -1847,7 +1868,7 @@ async function downloadPDF() {
       document.querySelectorAll('#teamMenu input:checked').forEach(cb => teamTags.push(cb.value));
     }
 
-    // Format date as MM/DD/YYYY
+    // Format date as Month Day, Year
     let dateDisplay = reportDate;
     if (reportDate) {
       try {
@@ -2107,6 +2128,7 @@ function clearForm() {
   document.getElementById('supPrintText').textContent = '';
   document.getElementById('prepPrintText').textContent = '';
   updateCtrlDisplay();
+  updateDatePrintText();
   clearSig();
 }
 </script>
